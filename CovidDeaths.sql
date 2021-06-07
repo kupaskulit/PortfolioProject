@@ -103,3 +103,40 @@ WHERE dea.continent IS NOT NULL AND dea.location LIKE '%Indonesia%'
 --ORDER BY 2, 3
 SELECT *, (RollingPeopleVaccinated/population)*100
 FROM PopvsVac;
+
+-- TEMP TABLE
+DROP TABLE IF EXISTS #PercentPopuplationVaccinated
+CREATE TABLE #PercentPopuplationVaccinated
+(
+Continent nvarchar(255),
+Location nvarchar(255),
+Date datetime,
+Population numeric,
+New_Vaccinations numeric,
+RollingPeopleVaccinated numeric
+)
+
+INSERT INTO #PercentPopuplationVaccinated
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+SUM(CONVERT(int,vac.new_vaccinations)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) RollingPeopleVaccinated
+FROM CovidDeaths dea
+JOIN CovidVaccinations vac
+	ON dea.location = vac.location
+	AND dea.date = vac.date
+-- WHERE dea.continent IS NOT NULL
+SELECT *, (RollingPeopleVaccinated/population)*100
+FROM #PercentPopuplationVaccinated
+
+
+CREATE VIEW PercentPopuplationVaccinated as
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+SUM(CONVERT(int,vac.new_vaccinations)) OVER (PARTITION BY dea.location ORDER BY dea.location, dea.date) RollingPeopleVaccinated
+FROM CovidDeaths dea
+JOIN CovidVaccinations vac
+	ON dea.location = vac.location
+	AND dea.date = vac.date
+WHERE dea.continent IS NOT NULL
+
+
+SELECT *
+FROM PercentPopuplationVaccinated;
